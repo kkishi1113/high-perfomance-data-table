@@ -1,21 +1,27 @@
-import { useState, useRef } from "react";
+"use client";
+
+import * as React from "react";
 import {
-  type CellContext,
   type ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type RowData = { id: number; [key: string]: string | number };
 
-export function VirtualizedSelectableTable() {
-  // --------------------------
-  // 1. ダミーデータ生成
-  // --------------------------
-  const columnsCount = 100;
-  const rowsCount = 1000;
+export function VirtualDataTable() {
+  const colCount = 100;
+  const rowCount = 1000;
 
   const columns: ColumnDef<RowData>[] = [
     {
@@ -36,47 +42,45 @@ export function VirtualizedSelectableTable() {
       ),
       size: 40,
     },
-    ...Array.from({ length: columnsCount }, (_, i) => ({
+    ...Array.from({ length: colCount }, (_, i) => ({
       accessorKey: `col${i + 1}`,
-      header: `Column ${i + 1}`,
-      cell: (info: CellContext<RowData, string | number>) => info.getValue(),
+      header: `Col ${i + 1}`,
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      cell: (info: any) => info.getValue(),
       size: 120,
     })),
   ];
 
-  const [data] = useState<RowData[]>(
-    Array.from({ length: rowsCount }, (_, rowIndex) => {
+  const [data] = React.useState<RowData[]>(
+    Array.from({ length: rowCount }, (_, rowIndex) => {
       const row: RowData = { id: rowIndex + 1 };
-      for (let col = 0; col < columnsCount; col++) {
+      for (let col = 0; col < colCount; col++) {
         row[`col${col + 1}`] = `R${rowIndex + 1}C${col + 1}`;
       }
       return row;
     })
   );
 
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
-  // --------------------------
-  // 2. TanStack Table生成
-  // --------------------------
   const table = useReactTable({
     data,
     columns,
     state: { rowSelection },
-    onRowSelectionChange: setRowSelection,
     enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // --------------------------
-  // 3. Virtualizer設定
-  // --------------------------
-  const parentRef = useRef<HTMLDivElement>(null);
+  const parentRef = React.useRef<HTMLDivElement>(null);
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  //   const headerRef = React.useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 35, // 各行の高さ
+    getScrollElement: () => bodyRef.current,
+    estimateSize: () => 36,
     overscan: 10,
   });
 
@@ -84,65 +88,153 @@ export function VirtualizedSelectableTable() {
     horizontal: true,
     count: table.getAllLeafColumns().length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 120,
+    estimateSize: (index) => table.getAllLeafColumns()[index]?.getSize() ?? 120,
     overscan: 5,
   });
 
-  // --------------------------
-  // 4. 仮想テーブル描画
-  // --------------------------
+  //   // 横スクロールをヘッダーと同期
+  //   React.useEffect(() => {
+  //     const syncScroll = () => {
+  //       if (headerRef.current && parentRef.current) {
+  //         headerRef.current.scrollLeft = parentRef.current.scrollLeft;
+  //       }
+  //     };
+  //     const el = parentRef.current;
+  //     el?.addEventListener("scroll", syncScroll);
+  //     return () => el?.removeEventListener("scroll", syncScroll);
+  //   }, []);
+
   return (
-    <div
-      ref={parentRef}
-      style={{
-        width: "100%",
-        height: "600px",
-        overflow: "auto",
-        position: "relative",
-      }}
-    >
+    <div className="w-full border rounded-md">
+      {/* スクロール全体管理 */}
       <div
-        style={{
-          width: colVirtualizer.getTotalSize(),
-          height: rowVirtualizer.getTotalSize(),
-          position: "relative",
-        }}
+        ref={parentRef}
+        className="w-full overflow-x-auto"
+        style={{ maxHeight: "600px" }}
       >
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-          const row = table.getRowModel().rows[virtualRow.index];
-          return (
-            <div
-              key={row.id}
+        {/* 固定ヘッダー */}
+        {/* <div
+          ref={headerRef}
+          className="sticky top-0 z-10 bg-background border-b"
+          style={{
+            width: colVirtualizer.getTotalSize(),
+            overflow: "hidden",
+          }}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow className="flex">
+                {colVirtualizer.getVirtualItems().map((vc) => {
+                  const header = table.getHeaderGroups()[0].headers[vc.index];
+                  return (
+                    <TableHead
+                      key={header.id}
+                      style={{
+                        minWidth: vc.size,
+                        transform: `translateX(${vc.start}px)`,
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        borderRight: "1px solid #ddd",
+                        padding: "4px",
+                      }}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            </TableHeader>
+          </Table>
+        </div> */}
+
+        {/* ボディ */}
+        <div
+          ref={bodyRef}
+          className="relative overflow-y-auto"
+          style={{
+            width: colVirtualizer.getTotalSize(),
+            height: 560,
+            position: "relative",
+          }}
+        >
+          <Table>
+            <TableHeader className="sticky">
+              <TableRow className="flex">
+                {colVirtualizer.getVirtualItems().map((vc) => {
+                  const header = table.getHeaderGroups()[0].headers[vc.index];
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="bg-white sticky"
+                      style={{
+                        minWidth: vc.size,
+                        transform: `translateX(${vc.start}px)`,
+                        top: 0,
+                        left: 0,
+                        borderRight: "1px solid #ddd",
+                        padding: "4px",
+                      }}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            </TableHeader>
+            <TableBody
               style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                transform: `translateY(${virtualRow.start}px)`,
-                height: `${virtualRow.size}px`,
-                display: "flex",
+                height: rowVirtualizer.getTotalSize(),
+                position: "relative",
               }}
             >
-              {colVirtualizer.getVirtualItems().map((virtualCol) => {
-                const cell = row.getVisibleCells()[virtualCol.index];
+              {rowVirtualizer.getVirtualItems().map((vr) => {
+                const row = table.getRowModel().rows[vr.index];
                 return (
-                  <div
-                    key={cell.id}
+                  <TableRow
+                    key={row.id}
+                    className="flex"
                     style={{
-                      width: `${virtualCol.size}px`,
-                      transform: `translateX(${virtualCol.start}px)`,
-                      border: "1px solid #ccc",
-                      padding: "4px",
-                      boxSizing: "border-box",
-                      flexShrink: 0,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      transform: `translateY(${vr.start}px)`,
+                      height: vr.size,
+                      width: "fit-content",
                     }}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </div>
+                    {colVirtualizer.getVirtualItems().map((vc) => {
+                      const cell = row.getVisibleCells()[vc.index];
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          style={{
+                            minWidth: vc.size,
+                            transform: `translateX(${vc.start}px)`,
+                            position: "absolute",
+                            padding: "4px",
+                            borderRight: "1px solid #eee",
+                          }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
                 );
               })}
-            </div>
-          );
-        })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
