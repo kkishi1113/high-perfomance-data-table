@@ -1,12 +1,9 @@
 import React from "react";
 import { flexRender, type Header } from "@tanstack/react-table";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+
 
 type DataGridHeaderProps<T> = {
   header: Header<T, unknown>;
