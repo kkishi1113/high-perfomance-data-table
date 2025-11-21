@@ -20,6 +20,14 @@ import { DataGridHeader } from "./data-grid-header";
 import { cn } from "@/lib/utils";
 import type { DataGridProps, WorkerResponse } from "./types";
 
+/**
+ * 高性能データグリッドコンポーネント
+ * 仮想化、ソート、編集、カラムリサイズ、行選択機能を提供します。
+ * 
+ * @template T データ型（Recordを継承）
+ * @param props DataGridProps
+ * @returns データグリッドコンポーネント
+ */
 export function DataGrid<T extends Record<string, any>>({
   columns,
   data,
@@ -33,13 +41,13 @@ export function DataGrid<T extends Record<string, any>>({
   enableColumnResizing = true,
   enableSorting = true,
 }: DataGridProps<T>) {
-  // --- State ---
+  // --- 状態管理 ---
   const [rows, setRows] = useState<T[]>(() => data);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  // --- Worker ---
+  // --- Web Worker関連 ---
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const rowsRef = useRef(rows);
@@ -59,6 +67,12 @@ export function DataGrid<T extends Record<string, any>>({
     };
   }, []);
 
+  /**
+   * Web Workerにメッセージを送信し、結果を待つヘルパー関数
+   * @param op 操作名（例: 'sort', 'filter'）
+   * @param payload 操作に必要なデータ
+   * @returns Workerからの結果
+   */
   const postWorker = useCallback((op: string, payload: any) => {
     return new Promise<any>((resolve, reject) => {
       const id = ++requestIdRef.current;
@@ -79,24 +93,24 @@ export function DataGrid<T extends Record<string, any>>({
     });
   }, []);
 
-  // --- Sorting Effect (Worker) ---
+  // --- ソート処理（Web Worker使用） ---
   useEffect(() => {
     if (sorting.length === 0) {
-      // If no sort, we might want to reset to original data order if we had a way to know it.
-      // For now, if data prop changes, it resets.
-      // If we just cleared sort, we might want to re-apply data to rows to reset order.
-      // But only if rows are currently different from data (which they might be if sorted).
-      // A simple check:
+      // ソートがない場合、元のデータ順序にリセットしたい場合があります
+      // 現時点では、dataプロパティが変更されるとリセットされます
+      // ソートをクリアした場合、データを行に再適用して順序をリセットする必要があるかもしれません
+      // ただし、行が現在データと異なる場合のみ（ソート済みの可能性がある）
+      // 簡単なチェック:
       if (data !== rows) {
-        // When clearing sort, we want to return to the original order (data),
-        // but preserve any edits made to the rows (rowsRef.current).
-        // We assume rows have a unique 'id' property to match them.
+        // ソートをクリアする際、元の順序（data）に戻したいが、
+        // 行に加えられた編集（rowsRef.current）は保持したい
+        // 行には一意の'id'プロパティがあると仮定します
         const currentRowsMap = new Map(rowsRef.current.map((r: any) => [r.id, r]));
         
         const mergedRows = data.map((originalRow: any) => {
-          // If the row exists in current state (potentially edited), use it.
-          // Otherwise fallback to original.
-          // Note: This relies on 'id' being present and stable.
+          // 行が現在の状態に存在する場合（編集されている可能性がある）、それを使用
+          // そうでなければ元のデータにフォールバック
+          // 注: これは'id'が存在し、安定していることに依存します
           if (originalRow.id !== undefined && currentRowsMap.has(originalRow.id)) {
             return currentRowsMap.get(originalRow.id)!;
           }
@@ -109,13 +123,13 @@ export function DataGrid<T extends Record<string, any>>({
     }
 
     const runSort = async () => {
-      // Optimization: Don't sort if data hasn't changed and sorting hasn't changed.
-      // But here we are in useEffect [sorting, data], so it's fine.
+      // 最適化: データが変更されておらず、ソートも変更されていない場合はソートしない
+      // ただし、ここではuseEffect [sorting, data]内にいるので問題ありません
       
-      // Use rowsRef.current to preserve edits when sorting
-      // But if data prop changed recently, we should use that.
-      // However, setRows(data) effect handles data prop changes.
-      // So here we just sort whatever is current.
+      // ソート時に編集を保持するためにrowsRef.currentを使用
+      // ただし、dataプロパティが最近変更された場合は、それを使用する必要があります
+      // しかし、setRows(data)エフェクトがdataプロパティの変更を処理します
+      // したがって、ここでは現在のものをソートするだけです
       const sorted = await postWorker("sort", {
         rows: rowsRef.current, 
         sortBy: sorting,
@@ -123,9 +137,9 @@ export function DataGrid<T extends Record<string, any>>({
       if (sorted) setRows(sorted);
     };
     runSort();
-  }, [sorting, postWorker]); // Removed data from dependency to avoid conflict/race, handled by setRows(data) effect
+  }, [sorting, postWorker]); // 競合/レースを避けるためにdataを依存関係から削除、setRows(data)エフェクトで処理
 
-  // --- Table Definition ---
+  // --- テーブル定義 ---
   const tableColumns = useMemo<ColumnDef<T>[]>(
     () =>
       columns.map((col) => ({
@@ -155,12 +169,12 @@ export function DataGrid<T extends Record<string, any>>({
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: "onChange",
     enableRowSelection,
-    enableColumnResizing, // Ensure this is passed to table options
+    enableColumnResizing, // テーブルオプションに渡すことを確認
   });
 
-  // --- Virtualization ---
+  // --- 仮想化 ---
   const parentRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null); // Ref for header to sync scroll
+  const headerRef = useRef<HTMLDivElement>(null); // ヘッダー用のRef（スクロール同期用）
 
   const { rows: tableRows } = table.getRowModel();
   const visibleColumns = table.getVisibleLeafColumns();
@@ -179,22 +193,22 @@ export function DataGrid<T extends Record<string, any>>({
     getScrollElement: () => parentRef.current,
     estimateSize: (i) => visibleColumns[i].getSize(),
     overscan: 2,
-    lanes: columnSizing ? undefined : undefined, // Hack to force update? No, let's rely on re-render.
+    lanes: columnSizing ? undefined : undefined, // 再レンダリングに依存
   });
 
-  // Force update virtualizer when column sizing changes
+  // カラムサイズ変更時に仮想化を強制更新
   useEffect(() => {
     columnVirtualizer.measure();
   }, [columnSizing, columnVirtualizer]);
 
-  // --- Scroll Sync ---
+  // --- スクロール同期 ---
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (headerRef.current) {
       headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
     }
   }, []);
 
-  // --- Editing ---
+  // --- 編集機能 ---
   const [editingCell, setEditingCell] = useState<{
     rowIndex: number;
     colId: string;
@@ -217,7 +231,7 @@ export function DataGrid<T extends Record<string, any>>({
     [columns, onDataChange]
   );
 
-  // --- Render ---
+  // --- レンダリング ---
   return (
     <div
       className={cn("flex flex-col border rounded-md overflow-hidden bg-white", className)}
@@ -226,9 +240,9 @@ export function DataGrid<T extends Record<string, any>>({
       {/* Header */}
       <div
         ref={headerRef}
-        className="flex border-b bg-gray-50 sticky top-0 z-10 overflow-hidden" // overflow-hidden to hide scrollbar but allow programmatic scroll
+        className="flex border-b bg-gray-50 sticky top-0 z-10 overflow-hidden" // スクロールバーを隠すがプログラムでスクロール可能にする
         style={{
-          width: "100%", // Match container width
+          width: "100%", // コンテナ幅に合わせる
           height: headerHeight,
         }}
       >
@@ -261,7 +275,7 @@ export function DataGrid<T extends Record<string, any>>({
       <div
         ref={parentRef}
         className="flex-1 overflow-auto"
-        onScroll={handleScroll} // Sync scroll
+        onScroll={handleScroll} // スクロール同期
         style={{
           height: "100%",
         }}

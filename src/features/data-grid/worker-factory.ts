@@ -1,3 +1,8 @@
+/**
+ * Web Workerを作成するファクトリー関数
+ * ソートとフィルタリング処理を非同期で実行するWorkerを生成します。
+ * @returns {Worker} 作成されたWeb Workerインスタンス
+ */
 export function createWorker() {
   const code = `
     self.onmessage = function(e) {
@@ -5,8 +10,8 @@ export function createWorker() {
       try {
         if(op === 'sort'){
           const { rows, sortBy } = payload;
-          // Simple accessor that assumes direct property access for now
-          // In a real scenario, we might need to pass accessor paths or functions (as strings)
+          // シンプルなアクセサ（直接プロパティアクセスを想定）
+          // 実際のシナリオでは、アクセサパスや関数を文字列として渡す必要がある場合があります
           const accessor = (row, key) => row[key];
           
           const sorted = rows.slice().sort((a,b) => {

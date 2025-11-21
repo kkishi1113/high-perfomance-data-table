@@ -5,12 +5,24 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 
 
 
+/**
+ * DataGridHeaderコンポーネントのProps
+ * @template T データ型
+ */
 type DataGridHeaderProps<T> = {
+  /** 表示するヘッダーオブジェクト */
   header: Header<T, unknown>;
+  /** 追加のクラス名 */
   className?: string;
+  /** スタイルオブジェクト */
   style?: React.CSSProperties;
 };
 
+/**
+ * データグリッドのヘッダーコンポーネント
+ * ソート機能とカラムリサイズ機能を提供します。
+ * @template T データ型
+ */
 export function DataGridHeader<T>({
   header,
   className,
@@ -41,7 +53,7 @@ export function DataGridHeader<T>({
         {isSorted === "desc" && <ArrowDown className="w-3 h-3" />}
       </div>
 
-      {/* Resizer */}
+      {/* リサイズハンドル */}
       <div
         onMouseDown={header.getResizeHandler()}
         onTouchStart={header.getResizeHandler()}

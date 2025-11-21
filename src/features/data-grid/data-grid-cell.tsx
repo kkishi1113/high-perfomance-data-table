@@ -2,16 +2,32 @@ import React, { useState, useEffect, useRef, memo } from "react";
 import type { Cell } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
+/**
+ * DataGridCellコンポーネントのProps
+ * @template T データ型
+ */
 type DataGridCellProps<T> = {
+  /** 表示するセルオブジェクト */
   cell: Cell<T, unknown>;
+  /** 編集モードかどうか */
   isEditing: boolean;
+  /** 編集開始時のコールバック */
   onEditStart: () => void;
+  /** 編集完了時のコールバック */
   onEditFinish: (value: any) => void;
+  /** 編集キャンセル時のコールバック */
   onEditCancel: () => void;
+  /** 追加のクラス名 */
   className?: string;
+  /** スタイルオブジェクト */
   style?: React.CSSProperties;
 };
 
+/**
+ * データグリッドのセルコンポーネント
+ * 表示モードと編集モードを切り替えることができます。
+ * @template T データ型
+ */
 function DataGridCellComponent<T>({
   cell,
   isEditing,
@@ -24,10 +40,12 @@ function DataGridCellComponent<T>({
   const [value, setValue] = useState(cell.getValue());
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 外部からの値変更を同期
   useEffect(() => {
     setValue(cell.getValue());
   }, [cell.getValue()]);
 
+  // 編集モードに入ったら入力フィールドにフォーカスして選択
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -40,7 +58,7 @@ function DataGridCellComponent<T>({
       onEditFinish(value);
     } else if (e.key === "Escape") {
       onEditCancel();
-      setValue(cell.getValue()); // Reset
+      setValue(cell.getValue()); // 元の値に戻す
     }
   };
 
@@ -78,22 +96,23 @@ function DataGridCellComponent<T>({
   );
 }
 
+/**
+ * メモ化されたDataGridCellコンポーネント
+ * 以下の場合のみ再レンダリングされます:
+ * 1. セルの値が変更された
+ * 2. 編集状態が変更された
+ * 3. スタイル（幅や位置）が変更された
+ */
 export const DataGridCell = memo(DataGridCellComponent, (prev, next) => {
-  // Only re-render if:
-  // 1. The cell value changed
-  // 2. The editing state for this cell changed
-  // 3. Style changed (e.g. width)
-  
   const prevVal = prev.cell.getValue();
   const nextVal = next.cell.getValue();
   
   if (prevVal !== nextVal) return false;
   if (prev.isEditing !== next.isEditing) return false;
   
-  // Check style width (virtualization updates this)
+  // スタイルの幅をチェック（仮想化で更新される）
   if (prev.style?.width !== next.style?.width) return false;
   if (prev.style?.left !== next.style?.left) return false;
 
   return true;
 }) as typeof DataGridCellComponent;
-

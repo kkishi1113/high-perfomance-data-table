@@ -4,19 +4,38 @@ import type { VirtualItem } from "@tanstack/react-virtual";
 import { DataGridCell } from "./data-grid-cell";
 import { cn } from "@/lib/utils";
 
+/**
+ * DataGridBodyコンポーネントのProps
+ * @template T データ型
+ */
 type DataGridBodyProps<T> = {
+  /** 仮想化された行のリスト */
   virtualRows: VirtualItem[];
+  /** 仮想化された列のリスト */
   virtualCols: VirtualItem[];
+  /** 全体の高さ（ピクセル） */
   totalHeight: number;
+  /** 全体の幅（ピクセル） */
   totalWidth: number;
+  /** 表示する行データ */
   rows: Row<T>[];
+  /** 現在編集中のセル情報 */
   editingCell: { rowIndex: number; colId: string } | null;
+  /** 編集開始時のコールバック */
   onEditStart: (rowIndex: number, colId: string) => void;
+  /** 編集完了時のコールバック */
   onEditFinish: (rowIndex: number, colId: string, value: any) => void;
+  /** 編集キャンセル時のコールバック */
   onEditCancel: () => void;
+  /** 選択された行のIDマップ */
   selectedRowIds: Record<string, boolean>;
 };
 
+/**
+ * データグリッドのボディコンポーネント
+ * 仮想化された行と列を効率的にレンダリングします。
+ * @template T データ型
+ */
 function DataGridBodyComponent<T>({
   virtualRows,
   virtualCols,
@@ -29,7 +48,8 @@ function DataGridBodyComponent<T>({
   onEditCancel,
   selectedRowIds,
 }: DataGridBodyProps<T>) {
-  void selectedRowIds; // Suppress unused variable warning, used for memoization update
+  // メモ化の更新トリガーとして使用（未使用警告を抑制）
+  void selectedRowIds;
   return (
     <div
       className="relative w-full"
