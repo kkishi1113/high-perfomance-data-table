@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -23,7 +17,7 @@ import type { DataGridProps, WorkerResponse } from "./types";
 /**
  * 高性能データグリッドコンポーネント
  * 仮想化、ソート、編集、カラムリサイズ、行選択機能を提供します。
- * 
+ *
  * @template T データ型（Recordを継承）
  * @param props DataGridProps
  * @returns データグリッドコンポーネント
@@ -105,13 +99,18 @@ export function DataGrid<T extends Record<string, any>>({
         // ソートをクリアする際、元の順序（data）に戻したいが、
         // 行に加えられた編集（rowsRef.current）は保持したい
         // 行には一意の'id'プロパティがあると仮定します
-        const currentRowsMap = new Map(rowsRef.current.map((r: any) => [r.id, r]));
-        
+        const currentRowsMap = new Map(
+          rowsRef.current.map((r: any) => [r.id, r])
+        );
+
         const mergedRows = data.map((originalRow: any) => {
           // 行が現在の状態に存在する場合（編集されている可能性がある）、それを使用
           // そうでなければ元のデータにフォールバック
           // 注: これは'id'が存在し、安定していることに依存します
-          if (originalRow.id !== undefined && currentRowsMap.has(originalRow.id)) {
+          if (
+            originalRow.id !== undefined &&
+            currentRowsMap.has(originalRow.id)
+          ) {
             return currentRowsMap.get(originalRow.id)!;
           }
           return originalRow;
@@ -125,13 +124,13 @@ export function DataGrid<T extends Record<string, any>>({
     const runSort = async () => {
       // 最適化: データが変更されておらず、ソートも変更されていない場合はソートしない
       // ただし、ここではuseEffect [sorting, data]内にいるので問題ありません
-      
+
       // ソート時に編集を保持するためにrowsRef.currentを使用
       // ただし、dataプロパティが最近変更された場合は、それを使用する必要があります
       // しかし、setRows(data)エフェクトがdataプロパティの変更を処理します
       // したがって、ここでは現在のものをソートするだけです
       const sorted = await postWorker("sort", {
-        rows: rowsRef.current, 
+        rows: rowsRef.current,
         sortBy: sorting,
       });
       if (sorted) setRows(sorted);
@@ -174,7 +173,6 @@ export function DataGrid<T extends Record<string, any>>({
 
   // --- 仮想化 ---
   const parentRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null); // ヘッダー用のRef（スクロール同期用）
 
   const { rows: tableRows } = table.getRowModel();
   const visibleColumns = table.getVisibleLeafColumns();
@@ -185,6 +183,7 @@ export function DataGrid<T extends Record<string, any>>({
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan: 10,
+    scrollMargin: headerHeight, // ヘッダーの高さを考慮してオフセットを設定
   });
 
   const columnVirtualizer = useVirtualizer({
@@ -201,13 +200,6 @@ export function DataGrid<T extends Record<string, any>>({
     columnVirtualizer.measure();
   }, [columnSizing, columnVirtualizer]);
 
-  // --- スクロール同期 ---
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (headerRef.current) {
-      headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  }, []);
-
   // --- 編集機能 ---
   const [editingCell, setEditingCell] = useState<{
     rowIndex: number;
@@ -219,9 +211,11 @@ export function DataGrid<T extends Record<string, any>>({
       setRows((prev) => {
         const next = [...prev];
         const row = next[rowIndex];
-        const colDef = columns.find((c) => c.id === colId || c.accessorKey === colId);
+        const colDef = columns.find(
+          (c) => c.id === colId || c.accessorKey === colId
+        );
         const key = colDef?.accessorKey || colId;
-        
+
         next[rowIndex] = { ...row, [key]: value };
         onDataChange?.(next);
         return next;
@@ -234,23 +228,27 @@ export function DataGrid<T extends Record<string, any>>({
   // --- レンダリング ---
   return (
     <div
-      className={cn("flex flex-col border rounded-md overflow-hidden bg-white", className)}
+      ref={parentRef}
+      className={cn(
+        "flex flex-col border rounded-md overflow-auto bg-white relative",
+        className
+      )}
       style={style}
     >
-      {/* Header */}
+      {/* コンテンツ全体を内包するdiv。幅と高さを仮想化サイズに設定 */}
       <div
-        ref={headerRef}
-        className="flex border-b bg-gray-50 sticky top-0 z-10 overflow-hidden" // スクロールバーを隠すがプログラムでスクロール可能にする
         style={{
-          width: "100%", // コンテナ幅に合わせる
-          height: headerHeight,
+          width: columnVirtualizer.getTotalSize(),
+          height: rowVirtualizer.getTotalSize() + headerHeight,
+          position: "relative",
         }}
       >
+        {/* Header */}
         <div
+          className="flex border-b bg-gray-50 sticky top-0 z-10"
           style={{
-            width: columnVirtualizer.getTotalSize(),
-            height: "100%",
-            position: "relative",
+            width: "100%", // コンテナ幅に合わせる
+            height: headerHeight,
           }}
         >
           {columnVirtualizer.getVirtualItems().map((virtualCol) => {
@@ -269,17 +267,8 @@ export function DataGrid<T extends Record<string, any>>({
             );
           })}
         </div>
-      </div>
 
-      {/* Body */}
-      <div
-        ref={parentRef}
-        className="flex-1 overflow-auto"
-        onScroll={handleScroll} // スクロール同期
-        style={{
-          height: "100%",
-        }}
-      >
+        {/* Body */}
         <DataGridBody
           virtualRows={rowVirtualizer.getVirtualItems()}
           virtualCols={columnVirtualizer.getVirtualItems()}
@@ -287,7 +276,10 @@ export function DataGrid<T extends Record<string, any>>({
           totalWidth={columnVirtualizer.getTotalSize()}
           rows={tableRows}
           editingCell={editingCell}
-          onEditStart={useCallback((rowIndex, colId) => setEditingCell({ rowIndex, colId }), [])}
+          onEditStart={useCallback(
+            (rowIndex, colId) => setEditingCell({ rowIndex, colId }),
+            []
+          )}
           onEditFinish={handleEditFinish}
           onEditCancel={useCallback(() => setEditingCell(null), [])}
           selectedRowIds={rowSelection}
