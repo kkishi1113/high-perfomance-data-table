@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import type { Cell } from "@tanstack/react-table";
-import { cn } from "@/lib/utils"; // Assuming standard shadcn utils exist, otherwise I'll define a local helper or use clsx directly if needed. Wait, I saw clsx and tailwind-merge in package.json.
-
+import { cn } from "@/lib/utils";
 
 type DataGridCellProps<T> = {
   cell: Cell<T, unknown>;
@@ -13,7 +12,7 @@ type DataGridCellProps<T> = {
   style?: React.CSSProperties;
 };
 
-export function DataGridCell<T>({
+function DataGridCellComponent<T>({
   cell,
   isEditing,
   onEditStart,
@@ -78,3 +77,23 @@ export function DataGridCell<T>({
     </div>
   );
 }
+
+export const DataGridCell = memo(DataGridCellComponent, (prev, next) => {
+  // Only re-render if:
+  // 1. The cell value changed
+  // 2. The editing state for this cell changed
+  // 3. Style changed (e.g. width)
+  
+  const prevVal = prev.cell.getValue();
+  const nextVal = next.cell.getValue();
+  
+  if (prevVal !== nextVal) return false;
+  if (prev.isEditing !== next.isEditing) return false;
+  
+  // Check style width (virtualization updates this)
+  if (prev.style?.width !== next.style?.width) return false;
+  if (prev.style?.left !== next.style?.left) return false;
+
+  return true;
+}) as typeof DataGridCellComponent;
+

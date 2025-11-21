@@ -82,15 +82,18 @@ export function DataGrid<T extends Record<string, any>>({
   // --- Sorting Effect (Worker) ---
   useEffect(() => {
     if (sorting.length === 0) {
-      // Reset to original order if needed, or just keep current if no sort
-      // For now, let's assume we just sort the current 'rows' state
-      // But ideally we should sort the *original* data.
-      // Simplified: if no sort, maybe reset to 'data' prop?
-      if (data !== rows) setRows(data);
+      // If no sort, we might want to reset to original data order if we had a way to know it.
+      // For now, if data prop changes, it resets.
+      // If we just cleared sort, we might want to re-apply data to rows to reset order.
+      // But only if rows are currently different from data (which they might be if sorted).
+      // A simple check:
+      if (rows !== data) setRows(data);
       return;
     }
 
     const runSort = async () => {
+      // Optimization: Don't sort if data hasn't changed and sorting hasn't changed.
+      // But here we are in useEffect [sorting, data], so it's fine.
       const sorted = await postWorker("sort", {
         rows: data, // Always sort from source of truth
         sortBy: sorting,
@@ -130,12 +133,16 @@ export function DataGrid<T extends Record<string, any>>({
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: "onChange",
     enableRowSelection,
+    enableColumnResizing, // Ensure this is passed to table options
   });
 
   // --- Virtualization ---
   const parentRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null); // Ref for header to sync scroll
 
   const { rows: tableRows } = table.getRowModel();
+  const visibleColumns = table.getVisibleLeafColumns();
+  const { columnSizing } = table.getState();
 
   const rowVirtualizer = useVirtualizer({
     count: tableRows.length,
@@ -146,11 +153,24 @@ export function DataGrid<T extends Record<string, any>>({
 
   const columnVirtualizer = useVirtualizer({
     horizontal: true,
-    count: tableColumns.length,
+    count: visibleColumns.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (i) => table.getAllColumns()[i].getSize(), // Use table column size which updates on resize
+    estimateSize: (i) => visibleColumns[i].getSize(),
     overscan: 2,
+    lanes: columnSizing ? undefined : undefined, // Hack to force update? No, let's rely on re-render.
   });
+
+  // Force update virtualizer when column sizing changes
+  useEffect(() => {
+    columnVirtualizer.measure();
+  }, [columnSizing, columnVirtualizer]);
+
+  // --- Scroll Sync ---
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (headerRef.current) {
+      headerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  }, []);
 
   // --- Editing ---
   const [editingCell, setEditingCell] = useState<{
@@ -163,9 +183,6 @@ export function DataGrid<T extends Record<string, any>>({
       setRows((prev) => {
         const next = [...prev];
         const row = next[rowIndex];
-        // This assumes simple object structure. Deep nesting needs more logic.
-        // Also we need to find the key from colId if possible, or use accessorKey
-        // For now, assuming colId matches key or accessorKey
         const colDef = columns.find((c) => c.id === colId || c.accessorKey === colId);
         const key = colDef?.accessorKey || colId;
         
@@ -186,46 +203,57 @@ export function DataGrid<T extends Record<string, any>>({
     >
       {/* Header */}
       <div
-        className="flex border-b bg-gray-50 sticky top-0 z-10"
+        ref={headerRef}
+        className="flex border-b bg-gray-50 sticky top-0 z-10 overflow-hidden" // overflow-hidden to hide scrollbar but allow programmatic scroll
         style={{
-          width: columnVirtualizer.getTotalSize(),
+          width: "100%", // Match container width
           height: headerHeight,
         }}
       >
-        {columnVirtualizer.getVirtualItems().map((virtualCol) => {
-          const header = table.getFlatHeaders()[virtualCol.index];
-          return (
-            <DataGridHeader
-              key={header.id}
-              header={header}
-              style={{
-                width: virtualCol.size,
-                transform: `translateX(${virtualCol.start}px)`,
-                position: "absolute",
-                left: 0,
-              }}
-            />
-          );
-        })}
+        <div
+          style={{
+            width: columnVirtualizer.getTotalSize(),
+            height: "100%",
+            position: "relative",
+          }}
+        >
+          {columnVirtualizer.getVirtualItems().map((virtualCol) => {
+            const header = table.getFlatHeaders()[virtualCol.index];
+            return (
+              <DataGridHeader
+                key={header.id}
+                header={header}
+                style={{
+                  width: virtualCol.size,
+                  transform: `translateX(${virtualCol.start}px)`,
+                  position: "absolute",
+                  left: 0,
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Body */}
       <div
         ref={parentRef}
         className="flex-1 overflow-auto"
+        onScroll={handleScroll} // Sync scroll
         style={{
-          height: "100%", // Fill remaining space
+          height: "100%",
         }}
       >
         <DataGridBody
-
-          rowVirtualizer={rowVirtualizer}
-          columnVirtualizer={columnVirtualizer}
+          virtualRows={rowVirtualizer.getVirtualItems()}
+          virtualCols={columnVirtualizer.getVirtualItems()}
+          totalHeight={rowVirtualizer.getTotalSize()}
+          totalWidth={columnVirtualizer.getTotalSize()}
           rows={tableRows}
           editingCell={editingCell}
-          onEditStart={(rowIndex, colId) => setEditingCell({ rowIndex, colId })}
+          onEditStart={useCallback((rowIndex, colId) => setEditingCell({ rowIndex, colId }), [])}
           onEditFinish={handleEditFinish}
-          onEditCancel={() => setEditingCell(null)}
+          onEditCancel={useCallback(() => setEditingCell(null), [])}
         />
       </div>
     </div>

@@ -49,7 +49,7 @@ export function DataGridHeader<T>({
         onMouseDown={header.getResizeHandler()}
         onTouchStart={header.getResizeHandler()}
         className={cn(
-          "absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity",
+          "absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity z-20",
           header.column.getIsResizing() && "bg-blue-500 opacity-100 w-1.5"
         )}
       />

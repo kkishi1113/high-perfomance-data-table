@@ -1,6 +1,6 @@
-
+import { memo } from "react";
 import type { Row } from "@tanstack/react-table";
-import { Virtualizer } from "@tanstack/react-virtual";
+import type { VirtualItem } from "@tanstack/react-virtual";
 import { DataGridCell } from "./DataGridCell";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -10,9 +10,10 @@ function cn(...inputs: ClassValue[]) {
 }
 
 type DataGridBodyProps<T> = {
-
-  rowVirtualizer: Virtualizer<HTMLDivElement, Element>;
-  columnVirtualizer: Virtualizer<HTMLDivElement, Element>;
+  virtualRows: VirtualItem[];
+  virtualCols: VirtualItem[];
+  totalHeight: number;
+  totalWidth: number;
   rows: Row<T>[];
   editingCell: { rowIndex: number; colId: string } | null;
   onEditStart: (rowIndex: number, colId: string) => void;
@@ -20,30 +21,23 @@ type DataGridBodyProps<T> = {
   onEditCancel: () => void;
 };
 
-export function DataGridBody<T>({
-
-  rowVirtualizer,
-  columnVirtualizer,
+function DataGridBodyComponent<T>({
+  virtualRows,
+  virtualCols,
+  totalHeight,
+  totalWidth,
   rows,
   editingCell,
   onEditStart,
   onEditFinish,
   onEditCancel,
 }: DataGridBodyProps<T>) {
-  const { getVirtualItems: getVirtualRows, getTotalSize: getTotalRowHeight } =
-    rowVirtualizer;
-  const { getVirtualItems: getVirtualCols, getTotalSize: getTotalColWidth } =
-    columnVirtualizer;
-
-  const virtualRows = getVirtualRows();
-  const virtualCols = getVirtualCols();
-
   return (
     <div
       className="relative w-full"
       style={{
-        height: getTotalRowHeight(),
-        width: getTotalColWidth(),
+        height: totalHeight,
+        width: totalWidth,
       }}
     >
       {virtualRows.map((virtualRow) => {
@@ -61,7 +55,7 @@ export function DataGridBody<T>({
             style={{
               top: virtualRow.start,
               height: virtualRow.size,
-              width: getTotalColWidth(),
+              width: totalWidth,
             }}
             onClick={() => row.toggleSelected()}
           >
@@ -102,3 +96,6 @@ export function DataGridBody<T>({
     </div>
   );
 }
+
+export const DataGridBody = memo(DataGridBodyComponent) as typeof DataGridBodyComponent;
+
