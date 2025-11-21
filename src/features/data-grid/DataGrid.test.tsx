@@ -132,4 +132,58 @@ describe('DataGrid', () => {
     const row2 = secondRowCell.closest('div[class*="absolute left-0"]');
     expect(row2).not.toHaveClass('bg-blue-50');
   });
+
+  it('updates rows when data prop changes', async () => {
+    const { rerender } = render(<DataGrid columns={columns} data={data} />);
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+
+    const newData = [
+      { id: 4, name: 'Dave' },
+    ];
+    rerender(<DataGrid columns={columns} data={newData} />);
+    
+    expect(screen.getByText('Dave')).toBeInTheDocument();
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  });
+
+  it('respects enableRowSelection prop', async () => {
+    const user = userEvent.setup();
+    render(<DataGrid columns={columns} data={data} enableRowSelection={false} />);
+    
+    const cell = await screen.findByText('Alice');
+    await user.click(cell);
+    
+    const row = cell.closest('div[class*="absolute left-0"]');
+    expect(row).not.toHaveClass('bg-blue-50');
+  });
+
+  it('sorts data correctly (mocked)', async () => {
+    const user = userEvent.setup();
+    render(<DataGrid columns={columns} data={data} />);
+    
+    const header = screen.getByText('Name');
+    await user.click(header); // Asc
+    
+    // In our mock worker, we implemented a simple sort.
+    // Let's verify the order in the DOM.
+    // Since virtualization is mocked with fixed positions, we might need to rely on the order of elements in the DOM or their top position.
+    
+    await waitFor(() => {
+      const rows = screen.getAllByText(/Alice|Bob|Charlie/);
+      // Alice (A), Bob (B), Charlie (C) -> Ascending
+      expect(rows[0]).toHaveTextContent('Alice');
+      expect(rows[1]).toHaveTextContent('Bob');
+      expect(rows[2]).toHaveTextContent('Charlie');
+    });
+
+    await user.click(header); // Desc
+    
+    await waitFor(() => {
+      const rows = screen.getAllByText(/Alice|Bob|Charlie/);
+      // Charlie (C), Bob (B), Alice (A) -> Descending
+      expect(rows[0]).toHaveTextContent('Charlie');
+      expect(rows[1]).toHaveTextContent('Bob');
+      expect(rows[2]).toHaveTextContent('Alice');
+    });
+  });
 });
