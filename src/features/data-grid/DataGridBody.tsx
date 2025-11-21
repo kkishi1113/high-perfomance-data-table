@@ -19,6 +19,7 @@ type DataGridBodyProps<T> = {
   onEditStart: (rowIndex: number, colId: string) => void;
   onEditFinish: (rowIndex: number, colId: string, value: any) => void;
   onEditCancel: () => void;
+  selectedRowIds: Record<string, boolean>;
 };
 
 function DataGridBodyComponent<T>({
@@ -31,7 +32,9 @@ function DataGridBodyComponent<T>({
   onEditStart,
   onEditFinish,
   onEditCancel,
+  selectedRowIds,
 }: DataGridBodyProps<T>) {
+  void selectedRowIds; // Suppress unused variable warning, used for memoization update
   return (
     <div
       className="relative w-full"

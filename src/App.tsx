@@ -86,7 +86,7 @@ function App() {
           </TabsContent>
         ))}
       </Tabs>
-      <Tabs>
+      {/* <Tabs>
         <TabsList>
           {components.map((component) => (
             <TabsTrigger key={component.label} value={component.label}>
@@ -103,7 +103,7 @@ function App() {
             {component.component}
           </TabsContent>
         ))}
-      </Tabs>
+      </Tabs> */}
     </>
   );
 }

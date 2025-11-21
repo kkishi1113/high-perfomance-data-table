@@ -20,7 +20,7 @@ const makeData = (count: number, colCount: number): Person[] => {
     };
 
     for (let j = 0; j < colCount; j++) {
-      row[`col${j}`] = faker.word.sample();
+      row[`col${j}`] = `Cell-${i}-${j}`;
     }
     data.push(row);
   }

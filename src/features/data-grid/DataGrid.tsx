@@ -47,6 +47,11 @@ export function DataGrid<T extends Record<string, any>>({
   // --- Worker ---
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
+  const rowsRef = useRef(rows);
+
+  useEffect(() => {
+    rowsRef.current = rows;
+  });
 
   useEffect(() => {
     setRows(data);
@@ -87,21 +92,43 @@ export function DataGrid<T extends Record<string, any>>({
       // If we just cleared sort, we might want to re-apply data to rows to reset order.
       // But only if rows are currently different from data (which they might be if sorted).
       // A simple check:
-      if (rows !== data) setRows(data);
+      if (data !== rows) {
+        // When clearing sort, we want to return to the original order (data),
+        // but preserve any edits made to the rows (rowsRef.current).
+        // We assume rows have a unique 'id' property to match them.
+        const currentRowsMap = new Map(rowsRef.current.map((r: any) => [r.id, r]));
+        
+        const mergedRows = data.map((originalRow: any) => {
+          // If the row exists in current state (potentially edited), use it.
+          // Otherwise fallback to original.
+          // Note: This relies on 'id' being present and stable.
+          if (originalRow.id !== undefined && currentRowsMap.has(originalRow.id)) {
+            return currentRowsMap.get(originalRow.id)!;
+          }
+          return originalRow;
+        });
+
+        setRows(mergedRows);
+      }
       return;
     }
 
     const runSort = async () => {
       // Optimization: Don't sort if data hasn't changed and sorting hasn't changed.
       // But here we are in useEffect [sorting, data], so it's fine.
+      
+      // Use rowsRef.current to preserve edits when sorting
+      // But if data prop changed recently, we should use that.
+      // However, setRows(data) effect handles data prop changes.
+      // So here we just sort whatever is current.
       const sorted = await postWorker("sort", {
-        rows: data, // Always sort from source of truth
+        rows: rowsRef.current, 
         sortBy: sorting,
       });
       if (sorted) setRows(sorted);
     };
     runSort();
-  }, [sorting, data, postWorker]);
+  }, [sorting, postWorker]); // Removed data from dependency to avoid conflict/race, handled by setRows(data) effect
 
   // --- Table Definition ---
   const tableColumns = useMemo<ColumnDef<T>[]>(
@@ -254,6 +281,7 @@ export function DataGrid<T extends Record<string, any>>({
           onEditStart={useCallback((rowIndex, colId) => setEditingCell({ rowIndex, colId }), [])}
           onEditFinish={handleEditFinish}
           onEditCancel={useCallback(() => setEditingCell(null), [])}
+          selectedRowIds={rowSelection}
         />
       </div>
     </div>
