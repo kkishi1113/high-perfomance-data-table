@@ -183,7 +183,7 @@ export function DataGrid<T extends Record<string, any>>({
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan: 10,
-    scrollMargin: headerHeight, // ヘッダーの高さを考慮してオフセットを設定
+    // scrollMargin: headerHeight, // ヘッダーの高さを考慮してオフセットを設定 -> 削除
   });
 
   const columnVirtualizer = useVirtualizer({
