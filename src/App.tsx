@@ -10,6 +10,7 @@ import HugeMatrixGrid from "./features/data-table/data-table-v7";
 import DataTableV8 from "./features/data-table/data-table-v8";
 import DataTableV9 from "./features/data-table/data-table-v9";
 import DataTableV10 from "./features/data-table/data-table-v10";
+import { DataGridDemo } from "./features/data-grid/DataGridDemo";
 function App() {
   const components = [
     {
@@ -53,25 +54,57 @@ function App() {
       component: <DataTableV10 />,
     },
   ];
+
+  const dataGrid = [
+    {
+      label: "Data Grid V1",
+      component: <DataGridDemo />,
+    },
+    {
+      label: "Data Grid V2",
+      component: <DataGridDemo />,
+    }
+  ];
+
   return (
-    <Tabs>
-      <TabsList>
-        {components.map((component) => (
-          <TabsTrigger key={component.label} value={component.label}>
-            {component.label}
-          </TabsTrigger>
+    <>
+      <Tabs>
+        <TabsList>
+          {dataGrid.map((component) => (
+            <TabsTrigger key={component.label} value={component.label}>
+              {component.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {dataGrid.map((component) => (
+          <TabsContent
+            key={component.label}
+            value={component.label}
+            className="p-8"
+          >
+            {component.component}
+          </TabsContent>
         ))}
-      </TabsList>
-      {components.map((component) => (
-        <TabsContent
-          key={component.label}
-          value={component.label}
-          className="p-8"
-        >
-          {component.component}
-        </TabsContent>
-      ))}
-    </Tabs>
+      </Tabs>
+      <Tabs>
+        <TabsList>
+          {components.map((component) => (
+            <TabsTrigger key={component.label} value={component.label}>
+              {component.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {components.map((component) => (
+          <TabsContent
+            key={component.label}
+            value={component.label}
+            className="p-8"
+          >
+            {component.component}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </>
   );
 }
 
