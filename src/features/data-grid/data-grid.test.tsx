@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { DataGrid } from './DataGrid';
+import { DataGrid } from './data-grid';
 import { describe, it, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import type { ColumnDefSimple } from './types';

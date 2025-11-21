@@ -15,15 +15,10 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { createWorker } from "./worker-factory";
-import { DataGridHeader } from "./DataGridHeader";
-import { DataGridBody } from "./DataGridBody";
+import { DataGridBody } from "./data-grid-body";
+import { DataGridHeader } from "./data-grid-header";
+import { cn } from "@/lib/utils";
 import type { DataGridProps, WorkerResponse } from "./types";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 export function DataGrid<T extends Record<string, any>>({
   columns,

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { DataGridBody } from './DataGridBody';
+import { DataGridBody } from './data-grid-body';
 import { describe, it, expect, vi } from 'vitest';
 import type { Row } from '@tanstack/react-table';
 import type { VirtualItem } from '@tanstack/react-virtual';

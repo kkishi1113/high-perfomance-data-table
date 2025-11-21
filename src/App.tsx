@@ -10,7 +10,7 @@ import HugeMatrixGrid from "./features/data-table/data-table-v7";
 import DataTableV8 from "./features/data-table/data-table-v8";
 import DataTableV9 from "./features/data-table/data-table-v9";
 import DataTableV10 from "./features/data-table/data-table-v10";
-import { DataGridDemo } from "./features/data-grid/DataGridDemo";
+import { DataGridDemo } from './features/data-grid/data-grid-demo';
 function App() {
   const components = [
     {

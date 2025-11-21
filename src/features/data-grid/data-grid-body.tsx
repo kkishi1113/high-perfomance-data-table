@@ -1,13 +1,8 @@
 import { memo } from "react";
 import type { Row } from "@tanstack/react-table";
 import type { VirtualItem } from "@tanstack/react-virtual";
-import { DataGridCell } from "./DataGridCell";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { DataGridCell } from "./data-grid-cell";
+import { cn } from "@/lib/utils";
 
 type DataGridBodyProps<T> = {
   virtualRows: VirtualItem[];

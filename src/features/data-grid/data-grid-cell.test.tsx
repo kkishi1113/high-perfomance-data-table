@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DataGridCell } from './DataGridCell';
+import { DataGridCell } from './data-grid-cell';
 import { describe, it, expect, vi } from 'vitest';
 import type { Cell } from '@tanstack/react-table';
 import userEvent from '@testing-library/user-event';

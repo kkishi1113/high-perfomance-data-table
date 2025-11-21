@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DataGridHeader } from './DataGridHeader';
+import { DataGridHeader } from './data-grid-header';
 import { describe, it, expect, vi } from 'vitest';
 import type { Header } from '@tanstack/react-table';
 import userEvent from '@testing-library/user-event';
