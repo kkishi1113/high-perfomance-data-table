@@ -182,26 +182,103 @@ describe('DataGridBody', () => {
     expect(mockOnEditFinish).toHaveBeenCalledWith(0, 'col-1', 'New Val');
   });
 
-  // it('renders pinned columns with correct z-index', () => {
-  //   const pinnedProps = {
-  //     ...defaultProps,
-  //     leftColumns: [
-  //       { id: 'col-1', getSize: () => 100, getStart: () => 0 }
-  //     ] as any[],
-  //     centerColumns: [
-  //       { id: 'col-2', getSize: () => 100, getStart: () => 100 }
-  //     ] as any[],
-  //     virtualCols: [
-  //       { index: 0, start: 0, size: 100 }
-  //     ] as VirtualItem[],
-  //   };
+  it('renders pinned columns with correct styles', () => {
+    const pinnedProps = {
+      ...defaultProps,
+      leftColumns: [
+        { 
+          id: 'col-1', 
+          getSize: () => 100, 
+          getStart: () => 0,
+          getIsPinned: () => 'left',
+          getIsLastColumn: () => false,
+          getIsFirstColumn: () => false,
+        }
+      ] as any[],
+      centerColumns: [
+        { id: 'col-2', getSize: () => 100, getStart: () => 100 }
+      ] as any[],
+      virtualCols: [
+        { index: 0, start: 0, size: 100 }
+      ] as VirtualItem[],
+    };
 
-  //   render(<DataGridBody {...pinnedProps} />);
+    render(<DataGridBody {...pinnedProps} />);
     
-  //   // col-1 (Value 1) は左固定
-  //   const pinnedCell = screen.getByText('Value 1').closest('div.absolute');
+    // col-1 (Value 1) is left pinned
+    const pinnedCellContainer = screen.getByText('Value 1').closest('div[style*="position: sticky"]');
     
-  //   expect(pinnedCell).toBeInTheDocument();
-  //   expect(pinnedCell).toHaveClass('z-10');
-  // });
+    expect(pinnedCellContainer).toBeInTheDocument();
+    expect(pinnedCellContainer).toHaveStyle({
+      position: 'sticky',
+      left: '0px',
+      zIndex: '1',
+      opacity: '0.95',
+    });
+  });
+
+  it('renders top pinned rows correctly positioned before virtual rows', () => {
+    const topPinnedProps = {
+      ...defaultProps,
+      topRows: [mockRows[0]], // Row 1 (Fixed)
+      rows: [mockRows[1]],    // Row 2 (Scrollable)
+      virtualRows: [{ index: 0, start: 30, size: 30 }] as VirtualItem[], // Row 2 starts after Row 1
+    };
+
+    render(<DataGridBody {...topPinnedProps} />);
+
+    const pinnedRowCell = screen.getByText('Value 1');
+    const scrollRowCell = screen.getByText('Value 3');
+
+    // 行コンテナを特定するために border-b クラスを使用（セルにはない）
+    const pinnedRow = pinnedRowCell.closest('div.border-b');
+    const scrollRow = scrollRowCell.closest('div.border-b');
+
+    // 存在確認
+    expect(pinnedRow).toBeInTheDocument();
+    expect(scrollRow).toBeInTheDocument();
+
+    // スタイルの詳細検証
+    // 固定行: sticky, top:0, z-10, bg-gray-100
+    expect(pinnedRow).toHaveClass('sticky', 'z-10', 'bg-gray-100');
+    expect(pinnedRow).toHaveStyle({ top: '0px', height: '34px' }); // default height fallback
+
+    // スクロール行: absolute, top:30px (virtual start), z-indexなし(または低い)
+    expect(scrollRow).toHaveClass('absolute');
+    expect(scrollRow).not.toHaveClass('sticky', 'z-10', 'bg-gray-100');
+    expect(scrollRow).toHaveStyle({ top: '30px', height: '30px' });
+
+    // DOM順序の検証: 固定行はスクロール行より前にあるべき
+    // Node.DOCUMENT_POSITION_FOLLOWING (4) -> scrollRow follows pinnedRow
+    expect(pinnedRow!.compareDocumentPosition(scrollRow!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('renders bottom pinned rows correctly positioned after virtual rows', () => {
+    const bottomPinnedProps = {
+      ...defaultProps,
+      bottomRows: [mockRows[0]], // Row 1 (Fixed Bottom)
+      rows: [mockRows[1]],       // Row 2 (Scrollable)
+      virtualRows: [{ index: 0, start: 0, size: 30 }] as VirtualItem[],
+    };
+
+    render(<DataGridBody {...bottomPinnedProps} />);
+
+    const pinnedRowCell = screen.getByText('Value 1');
+    const scrollRowCell = screen.getByText('Value 3');
+
+    const pinnedRow = pinnedRowCell.closest('div.border-b');
+    const scrollRow = scrollRowCell.closest('div.border-b');
+
+    expect(pinnedRow).toBeInTheDocument();
+    expect(scrollRow).toBeInTheDocument();
+
+    // スタイルの詳細検証
+    // 下部固定行: sticky, bottom:0, z-10, bg-gray-100
+    expect(pinnedRow).toHaveClass('sticky', 'z-10', 'bg-gray-100');
+    expect(pinnedRow).toHaveStyle({ bottom: '0px' });
+
+    // DOM順序の検証: 下部固定行はスクロール行より後にあるべき
+    // Node.DOCUMENT_POSITION_PRECEDING (2) -> scrollRow precedes pinnedRow
+    expect(pinnedRow!.compareDocumentPosition(scrollRow!)).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+  });
 });

@@ -2,6 +2,7 @@ import { flexRender } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { DataGridHeaderProps } from "../types";
+import { getCommonPinningStyles } from "../utils/get-common-pinning-style";
 
 /**
  * データグリッドのヘッダーコンポーネント
@@ -25,9 +26,8 @@ export function DataGridHeader<T>({
         className
       )}
       style={{
+        ...getCommonPinningStyles(column),
         ...style,
-        width: header.getSize(),
-        // styleプロパティでposition: stickyなどが渡されることを想定
       }}
     >
       <div

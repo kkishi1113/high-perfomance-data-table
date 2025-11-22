@@ -5,6 +5,8 @@ import type { DataGridBodyProps } from "../types";
 import type { Row } from "@tanstack/react-table";
 import type { VirtualItem } from "@tanstack/react-virtual";
 
+import { getCommonPinningStyles } from "../utils/get-common-pinning-style";
+
 /**
  * データグリッドのボディコンポーネント
  * 仮想化された行と列を効率的にレンダリングします。
@@ -40,7 +42,7 @@ function DataGridBodyComponent<T>({
       <div
         key={row.id}
         className={cn(
-          "flex items-center border-b hover:bg-gray-50 transition-colors box-border",
+          "flex items-center border-b bg-white hover:bg-gray-50 transition-colors box-border",
           row.getIsSelected() && "bg-blue-50 hover:bg-blue-100",
           (isStickyTop || isStickyBottom) ? "sticky z-10 bg-gray-100" : "absolute left-0"
         )}
@@ -60,14 +62,12 @@ function DataGridBodyComponent<T>({
           return (
             <div
               key={cell.id}
-              className="sticky left-0 z-20 h-full border-r bg-inherit"
-              // className={cn(
-              //   "flex items-center border-r bg-gray-50 last:border-r-0 absolute top-0 h-full z-10",
-              //   cell.column.getIsResizing() && "border-r-2 border-blue-500"
-              // )}
+              className={cn(
+                "flex items-center border-r bg-inherit h-full",
+                cell.column.getIsResizing() && "border-r-2 border-blue-500"
+              )}
               style={{
-                left: column.getStart('left'),
-                width: column.getSize(),
+                ...getCommonPinningStyles(column),
               }}
             >
               <DataGridCell
@@ -129,12 +129,11 @@ function DataGridBodyComponent<T>({
             <div
               key={cell.id}
               className={cn(
-                "flex items-center border-l bg-gray-50 first:border-l-0 absolute top-0 h-full z-10",
+                "flex items-center border-l bg-inherit h-full",
                 cell.column.getIsResizing() && "border-r-2 border-blue-500"
               )}
               style={{
-                right: column.getAfter('right'),
-                width: column.getSize(),
+                ...getCommonPinningStyles(column),
               }}
             >
               <DataGridCell

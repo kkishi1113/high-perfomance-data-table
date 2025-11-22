@@ -318,6 +318,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                     style={{
                       width: virtualColumn.size,
                       left: virtualColumn.start,
+                      position: 'absolute',
                     }}
                   />
                 );

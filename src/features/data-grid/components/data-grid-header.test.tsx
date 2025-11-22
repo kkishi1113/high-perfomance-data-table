@@ -14,10 +14,15 @@ describe('DataGridHeader', () => {
       columnDef: {
         header: 'Test Header',
       },
-      getIsSorted: () => false,
-      getToggleSortingHandler: () => mockToggleSorting,
-      getIsResizing: () => false,
+      getIsSorted: vi.fn(),
+      getToggleSortingHandler: vi.fn(() => mockToggleSorting),
+      getIsResizing: vi.fn(),
       getIsPinned: vi.fn(),
+      getSize: vi.fn(() => 100),
+      getStart: vi.fn(() => 0),
+      getAfter: vi.fn(() => 0),
+      getIsLastColumn: vi.fn(() => false),
+      getIsFirstColumn: vi.fn(() => false),
     },
     getSize: () => 100,
     getContext: () => ({}),
@@ -135,6 +140,10 @@ describe('DataGridHeader', () => {
     const sizedHeader = {
       ...mockHeader,
       getSize: () => 250,
+      column: {
+        ...mockHeader.column,
+        getSize: () => 250,
+      },
     } as unknown as Header<any, unknown>;
 
     const { container } = render(<DataGridHeader header={sizedHeader} />);
