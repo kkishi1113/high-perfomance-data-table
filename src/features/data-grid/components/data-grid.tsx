@@ -12,7 +12,7 @@ import { createWorker } from "@/features/data-grid/utils/worker-factory";
 import { DataGridBody } from "./data-grid-body";
 import { DataGridHeader } from "./data-grid-header";
 import { cn } from "@/lib/utils";
-import type { DataGridProps, WorkerResponse } from "../types";
+import type { DataGridProps, WorkerResponse, WorkerSortPayload, WorkerFilterPayload } from "../types";
 
 /**
  * 高性能データグリッドコンポーネント
@@ -22,7 +22,7 @@ import type { DataGridProps, WorkerResponse } from "../types";
  * @param props DataGridProps
  * @returns データグリッドコンポーネント
  */
-export function DataGrid<T extends Record<string, any>>({
+export function DataGrid<T extends Record<string, unknown>>({
   columns,
   data,
   rowHeight = 34,
@@ -67,8 +67,8 @@ export function DataGrid<T extends Record<string, any>>({
    * @param payload 操作に必要なデータ
    * @returns Workerからの結果
    */
-  const postWorker = useCallback((op: string, payload: any) => {
-    return new Promise<any>((resolve, reject) => {
+  const postWorker = useCallback((op: 'sort' | 'filter', payload: WorkerSortPayload | WorkerFilterPayload) => {
+    return new Promise<Record<string, unknown>[] | null>((resolve, reject) => {
       const id = ++requestIdRef.current;
       const w = workerRef.current;
       if (!w) return resolve(null);
@@ -100,18 +100,19 @@ export function DataGrid<T extends Record<string, any>>({
         // 行に加えられた編集（rowsRef.current）は保持したい
         // 行には一意の'id'プロパティがあると仮定します
         const currentRowsMap = new Map(
-          rowsRef.current.map((r: any) => [r.id, r])
+          rowsRef.current.map((r) => [(r as any).id, r])
         );
 
-        const mergedRows = data.map((originalRow: any) => {
+        const mergedRows = data.map((originalRow) => {
           // 行が現在の状態に存在する場合（編集されている可能性がある）、それを使用
           // そうでなければ元のデータにフォールバック
           // 注: これは'id'が存在し、安定していることに依存します
+          const id = (originalRow as any).id;
           if (
-            originalRow.id !== undefined &&
-            currentRowsMap.has(originalRow.id)
+            id !== undefined &&
+            currentRowsMap.has(id)
           ) {
-            return currentRowsMap.get(originalRow.id)!;
+            return currentRowsMap.get(id)!;
           }
           return originalRow;
         });
@@ -130,10 +131,10 @@ export function DataGrid<T extends Record<string, any>>({
       // しかし、setRows(data)エフェクトがdataプロパティの変更を処理します
       // したがって、ここでは現在のものをソートするだけです
       const sorted = await postWorker("sort", {
-        rows: rowsRef.current,
+        rows: rowsRef.current as Record<string, unknown>[],
         sortBy: sorting,
       });
-      if (sorted) setRows(sorted);
+      if (sorted) setRows(sorted as T[]);
     };
     runSort();
   }, [sorting, postWorker]); // 競合/レースを避けるためにdataを依存関係から削除、setRows(data)エフェクトで処理
@@ -207,7 +208,7 @@ export function DataGrid<T extends Record<string, any>>({
   } | null>(null);
 
   const handleEditFinish = useCallback(
-    (rowIndex: number, colId: string, value: any) => {
+    (rowIndex: number, colId: string, value: unknown) => {
       setRows((prev) => {
         const next = [...prev];
         const row = next[rowIndex];

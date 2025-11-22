@@ -7,7 +7,7 @@ type Person = {
   id: number;
   firstName: string;
   lastName: string;
-  [key: string]: any; // Allow dynamic columns
+  [key: string]: string | number; // Allow dynamic columns
 };
 
 const makeData = (count: number, colCount: number): Person[] => {

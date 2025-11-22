@@ -1,4 +1,5 @@
-import type { RowData } from "@tanstack/react-table";
+import type { RowData, Header, Cell, Row } from "@tanstack/react-table";
+import type { VirtualItem } from "@tanstack/react-virtual";
 
 /**
  * 簡易的なカラム定義型
@@ -10,7 +11,7 @@ export type ColumnDefSimple<T> = {
   /** ヘッダー表示名 */
   header: string;
   /** データアクセサ関数 */
-  accessor?: (row: T) => any;
+  accessor?: (row: T) => unknown;
   /** データアクセサキー */
   accessorKey?: keyof T & string;
   /** 幅（ピクセル） */
@@ -61,11 +62,72 @@ export type DataGridProps<T extends RowData> = {
 };
 
 /**
+ * DataGridHeaderコンポーネントのProps
+ * @template T データ型
+ */
+export type DataGridHeaderProps<T> = {
+  /** 表示するヘッダーオブジェクト */
+  header: Header<T, unknown>;
+  /** 追加のクラス名 */
+  className?: string;
+  /** スタイルオブジェクト */
+  style?: React.CSSProperties;
+};
+
+/**
+ * DataGridCellコンポーネントのProps
+ * @template T データ型
+ */
+export type DataGridCellProps<T> = {
+  /** 表示するセルオブジェクト */
+  cell: Cell<T, unknown>;
+  /** 編集モードかどうか */
+  isEditing: boolean;
+  /** 編集開始時のコールバック */
+  onEditStart: () => void;
+  /** 編集完了時のコールバック */
+  onEditFinish: (value: unknown) => void;
+  /** 編集キャンセル時のコールバック */
+  onEditCancel: () => void;
+  /** 追加のクラス名 */
+  className?: string;
+  /** スタイルオブジェクト */
+  style?: React.CSSProperties;
+};
+
+/**
+ * DataGridBodyコンポーネントのProps
+ * @template T データ型
+ */
+export type DataGridBodyProps<T> = {
+  /** 仮想化された行のリスト */
+  virtualRows: VirtualItem[];
+  /** 仮想化された列のリスト */
+  virtualCols: VirtualItem[];
+  /** 全体の高さ（ピクセル） */
+  totalHeight: number;
+  /** 全体の幅（ピクセル） */
+  totalWidth: number;
+  /** 表示する行データ */
+  rows: Row<T>[];
+  /** 現在編集中のセル情報 */
+  editingCell: { rowIndex: number; colId: string } | null;
+  /** 編集開始時のコールバック */
+  onEditStart: (rowIndex: number, colId: string) => void;
+  /** 編集完了時のコールバック */
+  onEditFinish: (rowIndex: number, colId: string, value: unknown) => void;
+  /** 編集キャンセル時のコールバック */
+  onEditCancel: () => void;
+  /** 選択された行のIDマップ */
+  selectedRowIds: Record<string, boolean>;
+};
+
+/**
  * Web Workerソート処理のペイロード型
  */
 export type WorkerSortPayload = {
   /** ソート対象の行データ配列 */
-  rows: any[];
+  rows: Record<string, unknown>[];
   /** ソート条件配列 */
   sortBy: { id: string; desc?: boolean }[];
 };
@@ -75,21 +137,21 @@ export type WorkerSortPayload = {
  */
 export type WorkerFilterPayload = {
   /** フィルター対象の行データ配列 */
-  rows: any[];
+  rows: Record<string, unknown>[];
   /** フィルター条件配列 */
-  filters: { id: string; value: any }[];
+  filters: { id: string; value: unknown }[];
 };
 
 /**
  * Web Workerへのメッセージ型
  */
-export type WorkerMessage = 
+export type WorkerMessage =
   | { id: number; op: 'sort'; payload: WorkerSortPayload }
   | { id: number; op: 'filter'; payload: WorkerFilterPayload };
 
 /**
  * Web Workerからのレスポンス型
  */
-export type WorkerResponse = 
-  | { id: number; result: any[] }
+export type WorkerResponse =
+  | { id: number; result: Record<string, unknown>[] }
   | { id: number; error: string };

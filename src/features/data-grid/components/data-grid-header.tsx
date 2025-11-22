@@ -1,22 +1,7 @@
-import React from "react";
-import { flexRender, type Header } from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp } from "lucide-react";
-
-
-
-/**
- * DataGridHeaderコンポーネントのProps
- * @template T データ型
- */
-type DataGridHeaderProps<T> = {
-  /** 表示するヘッダーオブジェクト */
-  header: Header<T, unknown>;
-  /** 追加のクラス名 */
-  className?: string;
-  /** スタイルオブジェクト */
-  style?: React.CSSProperties;
-};
+import type { DataGridHeaderProps } from "../types";
 
 /**
  * データグリッドのヘッダーコンポーネント

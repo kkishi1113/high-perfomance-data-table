@@ -1,27 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from "react";
-import type { Cell } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
-
-/**
- * DataGridCellコンポーネントのProps
- * @template T データ型
- */
-type DataGridCellProps<T> = {
-  /** 表示するセルオブジェクト */
-  cell: Cell<T, unknown>;
-  /** 編集モードかどうか */
-  isEditing: boolean;
-  /** 編集開始時のコールバック */
-  onEditStart: () => void;
-  /** 編集完了時のコールバック */
-  onEditFinish: (value: any) => void;
-  /** 編集キャンセル時のコールバック */
-  onEditCancel: () => void;
-  /** 追加のクラス名 */
-  className?: string;
-  /** スタイルオブジェクト */
-  style?: React.CSSProperties;
-};
+import type { DataGridCellProps } from "../types";
 
 /**
  * データグリッドのセルコンポーネント
@@ -106,10 +85,10 @@ function DataGridCellComponent<T>({
 export const DataGridCell = memo(DataGridCellComponent, (prev, next) => {
   const prevVal = prev.cell.getValue();
   const nextVal = next.cell.getValue();
-  
+
   if (prevVal !== nextVal) return false;
   if (prev.isEditing !== next.isEditing) return false;
-  
+
   // スタイルの幅をチェック（仮想化で更新される）
   if (prev.style?.width !== next.style?.width) return false;
   if (prev.style?.left !== next.style?.left) return false;
