@@ -28,6 +28,8 @@ function DataGridBodyComponent<T>({
   onEditFinish,
   onEditCancel,
   selectedRowIds,
+  headerHeight,
+  rowHeight,
 }: DataGridBodyProps<T>) {
   // メモ化の更新トリガーとして使用（未使用警告を抑制）
   void selectedRowIds;
@@ -38,6 +40,34 @@ function DataGridBodyComponent<T>({
     // セルをIDでマップ化して高速アクセス
     const cellsMap = new Map(visibleCells.map(c => [c.column.id, c]));
 
+    // ピン留め行のtop位置計算
+    // isStickyTopの場合、ヘッダーの高さ + (インデックス * 行の高さ)
+    // isStickyBottomの場合、bottom: 0 (複数行の場合は積み上げが必要だが、簡易実装として0固定または別途計算が必要)
+    // ここでは簡易的に、bottom固定行は積み上げを考慮せず、top固定行のみ修正対象とする
+
+    // Note: topRowsのインデックスは0から始まる
+    // 実際のインデックスは row.index だが、これは全データ中のインデックス。
+    // topRows内のインデックスが必要。
+    const topIndex = topRows.findIndex(r => r.id === row.id);
+
+    let topStyle: number | undefined = undefined;
+    let bottomStyle: number | undefined = undefined;
+
+    if (isStickyTop) {
+      topStyle = headerHeight + (topIndex >= 0 ? topIndex * rowHeight : 0);
+    } else if (isStickyBottom) {
+      // bottomRows内のインデックスを取得
+      const bottomIndex = bottomRows.findIndex(r => r.id === row.id);
+      // 下から積み上げる: (総数 - 1 - インデックス) * 高さ
+      if (bottomIndex >= 0) {
+        bottomStyle = (bottomRows.length - 1 - bottomIndex) * rowHeight;
+      } else {
+        bottomStyle = 0;
+      }
+    } else {
+      topStyle = virtualRow?.start;
+    }
+
     return (
       <div
         key={row.id}
@@ -47,9 +77,9 @@ function DataGridBodyComponent<T>({
           (isStickyTop || isStickyBottom) ? "sticky z-10 bg-gray-100" : "absolute left-0"
         )}
         style={{
-          top: isStickyBottom ? undefined : (isStickyTop ? 0 : virtualRow?.start),
-          bottom: isStickyBottom ? 0 : undefined,
-          height: virtualRow?.size || 34, // 固定行の高さはデフォルトか動的に取得
+          top: topStyle,
+          bottom: bottomStyle,
+          height: rowHeight, // 固定行の高さ
           width: "100%",
           minWidth: "fit-content", // コンテンツ幅に合わせる
         }}

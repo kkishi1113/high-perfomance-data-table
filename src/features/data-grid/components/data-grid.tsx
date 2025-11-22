@@ -52,8 +52,8 @@ export function DataGrid<T extends Record<string, unknown>>({
     return { left, right };
   });
   const [rowPinning, setRowPinning] = useState<RowPinningState>({
-    top: [],
-    bottom: [],
+    top: ["3", "5", "7"],
+    bottom: ["6", "8", "10"],
   });
 
   // --- Web Worker関連 ---
@@ -193,13 +193,14 @@ export function DataGrid<T extends Record<string, unknown>>({
     enablePinning: true,
     enableColumnPinning: true,
     enableRowPinning: true,
+    getRowId: (row) => (row as any).id,
   });
 
   // --- 仮想化 ---
   const parentRef = useRef<HTMLDivElement>(null);
 
   // const { rows: tableRows } = table.getRowModel();
-  
+
   // 行の分割（固定行とスクロール行）
   // 注: TanStack TableのgetTopRowsなどはRowPinning機能が必要ですが、
   // ここでは簡易的に実装するか、ライブラリの機能を使用します。
@@ -290,54 +291,54 @@ export function DataGrid<T extends Record<string, unknown>>({
             height: headerHeight,
           }}
         >
-                  {/* Left Pinned Headers */}
-            {table.getLeftLeafColumns().map((column) => {
+          {/* Left Pinned Headers */}
+          {table.getLeftLeafColumns().map((column) => {
+            const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
+            if (!header) return null;
+            return (
+              <DataGridHeader
+                key={column.id}
+                header={header}
+                className="sticky left-0 z-20"
+                style={{ left: column.getStart('left') }}
+              />
+            );
+          })}
+
+          {/* Virtualized Center Headers */}
+          <div className="relative flex-1 h-full">
+            {columnVirtualizer.getVirtualItems().map((virtualColumn) => {
+              const column = centerColumns[virtualColumn.index];
               const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
               if (!header) return null;
               return (
                 <DataGridHeader
                   key={column.id}
                   header={header}
-                  className="sticky left-0 z-20"
-                  style={{ left: column.getStart('left') }}
+                  className="absolute top-0 h-full"
+                  style={{
+                    width: virtualColumn.size,
+                    left: virtualColumn.start,
+                    position: 'absolute',
+                  }}
                 />
               );
             })}
+          </div>
 
-            {/* Virtualized Center Headers */}
-            <div className="relative flex-1 h-full">
-              {columnVirtualizer.getVirtualItems().map((virtualColumn) => {
-                const column = centerColumns[virtualColumn.index];
-                const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
-                if (!header) return null;
-                return (
-                  <DataGridHeader
-                    key={column.id}
-                    header={header}
-                    className="absolute top-0 h-full"
-                    style={{
-                      width: virtualColumn.size,
-                      left: virtualColumn.start,
-                      position: 'absolute',
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Right Pinned Headers */}
-            {table.getRightLeafColumns().map((column) => {
-              const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
-              if (!header) return null;
-              return (
-                <DataGridHeader
-                  key={column.id}
-                  header={header}
-                  className="sticky right-0 z-20"
-                  style={{ right: column.getAfter('right') }}
-                />
-              );
-            })}
+          {/* Right Pinned Headers */}
+          {table.getRightLeafColumns().map((column) => {
+            const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
+            if (!header) return null;
+            return (
+              <DataGridHeader
+                key={column.id}
+                header={header}
+                className="sticky right-0 z-20"
+                style={{ right: column.getAfter('right') }}
+              />
+            );
+          })}
         </div>
 
         {/* Body */}
@@ -360,6 +361,8 @@ export function DataGrid<T extends Record<string, unknown>>({
           onEditFinish={handleEditFinish}
           onEditCancel={useCallback(() => setEditingCell(null), [])}
           selectedRowIds={rowSelection}
+          headerHeight={headerHeight}
+          rowHeight={rowHeight}
         />
       </div>
     </div>

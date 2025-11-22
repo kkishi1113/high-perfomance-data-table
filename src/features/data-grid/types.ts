@@ -132,6 +132,10 @@ export type DataGridBodyProps<T> = {
   onEditCancel: () => void;
   /** 選択された行のIDマップ */
   selectedRowIds: Record<string, boolean>;
+  /** ヘッダーの高さ（ピクセル） */
+  headerHeight: number;
+  /** 行の高さ（ピクセル） */
+  rowHeight: number;
 };
 
 /**
