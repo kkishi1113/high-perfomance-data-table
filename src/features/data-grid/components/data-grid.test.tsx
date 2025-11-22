@@ -186,4 +186,21 @@ describe('DataGrid', () => {
       expect(rows[2]).toHaveTextContent('Alice');
     });
   });
+
+  it('respects defaultPinned column definition', () => {
+    const pinnedColumns: ColumnDefSimple<TestData>[] = [
+      { id: 'id', header: 'ID', accessorKey: 'id', width: 50, defaultPinned: 'left' },
+      { id: 'name', header: 'Name', accessorKey: 'name', width: 100 },
+    ];
+
+    render(<DataGrid columns={pinnedColumns} data={data} />);
+    
+    // IDカラムのヘッダーがstickyクラスを持っているか確認
+    // 注: 実装によってはクラス名やスタイルが異なる場合があるため、実装に合わせて調整が必要
+    // ここでは data-grid.tsx で "sticky left-0" クラスが付与されることを期待
+    const idHeader = screen.getByText('ID').closest('div[class*="sticky"]');
+    expect(idHeader).toBeInTheDocument();
+    expect(idHeader).toHaveClass('sticky');
+    expect(idHeader).toHaveClass('left-0');
+  });
 });

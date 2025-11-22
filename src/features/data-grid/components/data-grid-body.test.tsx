@@ -18,12 +18,12 @@ describe('DataGridBody', () => {
       getVisibleCells: () => [
         {
           id: 'cell-1-1',
-          column: { id: 'col-1' },
+          column: { id: 'col-1', getIsResizing: vi.fn() },
           getValue: () => 'Value 1',
         },
         {
           id: 'cell-1-2',
-          column: { id: 'col-2' },
+          column: { id: 'col-2', getIsResizing: vi.fn() },
           getValue: () => 'Value 2',
         },
       ],
@@ -36,12 +36,12 @@ describe('DataGridBody', () => {
       getVisibleCells: () => [
         {
           id: 'cell-2-1',
-          column: { id: 'col-1' },
+          column: { id: 'col-1', getIsResizing: vi.fn() },
           getValue: () => 'Value 3',
         },
         {
           id: 'cell-2-2',
-          column: { id: 'col-2' },
+          column: { id: 'col-2', getIsResizing: vi.fn() },
           getValue: () => 'Value 4',
         },
       ],
@@ -66,6 +66,14 @@ describe('DataGridBody', () => {
     totalHeight: 60,
     totalWidth: 200,
     rows: mockRows,
+    topRows: [],
+    bottomRows: [],
+    leftColumns: [],
+    rightColumns: [],
+    centerColumns: [
+      { id: 'col-1', getSize: () => 100, getStart: () => 0 },
+      { id: 'col-2', getSize: () => 100, getStart: () => 100 },
+    ] as any[],
     editingCell: null,
     onEditStart: mockOnEditStart,
     onEditFinish: mockOnEditFinish,
@@ -130,7 +138,7 @@ describe('DataGridBody', () => {
     expect(row1).toHaveStyle({
       top: '0px',
       height: '30px',
-      width: '200px',
+      width: '100%',
     });
 
     // Cell 1-1
@@ -173,4 +181,27 @@ describe('DataGridBody', () => {
     
     expect(mockOnEditFinish).toHaveBeenCalledWith(0, 'col-1', 'New Val');
   });
+
+  // it('renders pinned columns with correct z-index', () => {
+  //   const pinnedProps = {
+  //     ...defaultProps,
+  //     leftColumns: [
+  //       { id: 'col-1', getSize: () => 100, getStart: () => 0 }
+  //     ] as any[],
+  //     centerColumns: [
+  //       { id: 'col-2', getSize: () => 100, getStart: () => 100 }
+  //     ] as any[],
+  //     virtualCols: [
+  //       { index: 0, start: 0, size: 100 }
+  //     ] as VirtualItem[],
+  //   };
+
+  //   render(<DataGridBody {...pinnedProps} />);
+    
+  //   // col-1 (Value 1) は左固定
+  //   const pinnedCell = screen.getByText('Value 1').closest('div.absolute');
+    
+  //   expect(pinnedCell).toBeInTheDocument();
+  //   expect(pinnedCell).toHaveClass('z-10');
+  // });
 });

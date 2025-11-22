@@ -15,16 +15,19 @@ export function DataGridHeader<T>({
 }: DataGridHeaderProps<T>) {
   const { column } = header;
   const isSorted = column.getIsSorted();
+  const isPinned = column.getIsPinned();
 
   return (
     <div
       className={cn(
         "flex h-full items-center px-2 py-1 border-r bg-gray-50 text-sm font-medium relative group select-none",
+        isPinned && "bg-gray-100 z-20", // 固定カラムのスタイル調整
         className
       )}
       style={{
         ...style,
         width: header.getSize(),
+        // styleプロパティでposition: stickyなどが渡されることを想定
       }}
     >
       <div

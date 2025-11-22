@@ -26,6 +26,8 @@ export type ColumnDefSimple<T> = {
   enableSorting?: boolean;
   /** 固定表示可能かどうか */
   enablePinning?: boolean;
+  /** 初期状態でのピン留め位置 */
+  defaultPinned?: 'left' | 'right' | false;
 };
 
 /**
@@ -100,16 +102,26 @@ export type DataGridCellProps<T> = {
  * @template T データ型
  */
 export type DataGridBodyProps<T> = {
-  /** 仮想化された行のリスト */
+  /** 仮想化された行のリスト（中央部分） */
   virtualRows: VirtualItem[];
-  /** 仮想化された列のリスト */
+  /** 仮想化された列のリスト（中央部分） */
   virtualCols: VirtualItem[];
   /** 全体の高さ（ピクセル） */
   totalHeight: number;
   /** 全体の幅（ピクセル） */
   totalWidth: number;
-  /** 表示する行データ */
+  /** 表示する行データ（中央部分） */
   rows: Row<T>[];
+  /** 上部固定行 */
+  topRows: Row<T>[];
+  /** 下部固定行 */
+  bottomRows: Row<T>[];
+  /** 左側固定カラム */
+  leftColumns: import("@tanstack/react-table").Column<T, unknown>[];
+  /** 右側固定カラム */
+  rightColumns: import("@tanstack/react-table").Column<T, unknown>[];
+  /** 中央カラム（仮想化対象） */
+  centerColumns: import("@tanstack/react-table").Column<T, unknown>[];
   /** 現在編集中のセル情報 */
   editingCell: { rowIndex: number; colId: string } | null;
   /** 編集開始時のコールバック */

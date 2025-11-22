@@ -33,9 +33,28 @@ export function DataGridDemo() {
 
   const columns = useMemo(() => {
     const cols: ColumnDefSimple<Person>[] = [
-      { id: "id", header: "ID", accessorKey: "id", width: 80, enablePinning: true },
-      { id: "firstName", header: "First Name", accessorKey: "firstName", width: 150 },
-      { id: "lastName", header: "Last Name", accessorKey: "lastName", width: 150 },
+      {
+        id: "id",
+        header: "ID",
+        accessorKey: "id",
+        width: 60,
+        enablePinning: true,
+        defaultPinned: 'left',
+      },
+      {
+        id: "firstName",
+        header: "First Name",
+        accessorKey: "firstName",
+        width: 120,
+        enablePinning: true,
+        defaultPinned: 'left',
+      },
+      {
+        id: "lastName",
+        header: "Last Name",
+        accessorKey: "lastName",
+        width: 120,
+      },
     ];
 
     for (let i = 0; i < colCount; i++) {
@@ -55,10 +74,15 @@ export function DataGridDemo() {
       <DataGrid
         columns={columns}
         data={data}
-        className="h-[500px]"
+        className="h-[600px] w-full"
         enableRowSelection
         enableColumnResizing
         enableSorting
+        // 初期状態でカラムをピン留めする（DataGridコンポーネント側でstateを受け取るように拡張が必要だが、
+        // 現状は内部stateで管理しているため、propsで初期値を渡せるようにするか、
+        // DataGrid側でデフォルトのピン留めロジックを実装する必要がある。
+        // ここでは、DataGridコンポーネントが初期値を受け取れるように修正したと仮定、
+        // またはDataGridコンポーネントのdefaultPropsで対応する。）
       />
     </div>
   );

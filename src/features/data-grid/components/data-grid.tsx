@@ -6,6 +6,8 @@ import {
   type SortingState,
   type RowSelectionState,
   type ColumnFiltersState,
+  type ColumnPinningState,
+  type RowPinningState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { createWorker } from "@/features/data-grid/utils/worker-factory";
@@ -40,6 +42,19 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(() => {
+    const left: string[] = [];
+    const right: string[] = [];
+    columns.forEach((col) => {
+      if (col.defaultPinned === 'left') left.push(col.id);
+      if (col.defaultPinned === 'right') right.push(col.id);
+    });
+    return { left, right };
+  });
+  const [rowPinning, setRowPinning] = useState<RowPinningState>({
+    top: [],
+    bottom: [],
+  });
 
   // --- Web Worker関連 ---
   const workerRef = useRef<Worker | null>(null);
@@ -150,6 +165,7 @@ export function DataGrid<T extends Record<string, unknown>>({
         maxSize: col.maxWidth ?? 500,
         enableResizing: col.enableResizing ?? enableColumnResizing,
         enableSorting: col.enableSorting ?? enableSorting,
+        enablePinning: col.enablePinning ?? true,
         cell: (info) => info.getValue(),
       })),
     [columns, estimatedColumnWidth, enableColumnResizing, enableSorting]
@@ -162,36 +178,58 @@ export function DataGrid<T extends Record<string, unknown>>({
       sorting,
       rowSelection,
       columnFilters,
+      columnPinning,
+      rowPinning,
     },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
+    onColumnPinningChange: setColumnPinning,
+    onRowPinningChange: setRowPinning,
     getCoreRowModel: getCoreRowModel(),
     columnResizeMode: "onChange",
     enableRowSelection,
     enableColumnResizing, // テーブルオプションに渡すことを確認
+    enablePinning: true,
+    enableColumnPinning: true,
+    enableRowPinning: true,
   });
 
   // --- 仮想化 ---
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const { rows: tableRows } = table.getRowModel();
+  // const { rows: tableRows } = table.getRowModel();
+  
+  // 行の分割（固定行とスクロール行）
+  // 注: TanStack TableのgetTopRowsなどはRowPinning機能が必要ですが、
+  // ここでは簡易的に実装するか、ライブラリの機能を使用します。
+  // 現在のバージョンではRowPinningは標準機能として提供されています。
+  const topRows = table.getTopRows();
+  const bottomRows = table.getBottomRows();
+  const centerRows = table.getCenterRows();
+
   const visibleColumns = table.getVisibleLeafColumns();
+  // カラムの分割
+  const leftColumns = table.getLeftLeafColumns();
+  const rightColumns = table.getRightLeafColumns();
+  const centerColumns = visibleColumns.filter(
+    (c) => !c.getIsPinned()
+  );
+
   const { columnSizing } = table.getState();
 
   const rowVirtualizer = useVirtualizer({
-    count: tableRows.length,
+    count: centerRows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => rowHeight,
     overscan: 10,
-    // scrollMargin: headerHeight, // ヘッダーの高さを考慮してオフセットを設定 -> 削除
   });
 
   const columnVirtualizer = useVirtualizer({
     horizontal: true,
-    count: visibleColumns.length,
+    count: centerColumns.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (i) => visibleColumns[i].getSize(),
+    estimateSize: (i) => centerColumns[i].getSize(),
     overscan: 2,
     lanes: columnSizing ? undefined : undefined, // 再レンダリングに依存
   });
@@ -252,21 +290,53 @@ export function DataGrid<T extends Record<string, unknown>>({
             height: headerHeight,
           }}
         >
-          {columnVirtualizer.getVirtualItems().map((virtualCol) => {
-            const header = table.getFlatHeaders()[virtualCol.index];
-            return (
-              <DataGridHeader
-                key={header.id}
-                header={header}
-                style={{
-                  width: virtualCol.size,
-                  transform: `translateX(${virtualCol.start}px)`,
-                  position: "absolute",
-                  left: 0,
-                }}
-              />
-            );
-          })}
+                  {/* Left Pinned Headers */}
+            {table.getLeftLeafColumns().map((column) => {
+              const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
+              if (!header) return null;
+              return (
+                <DataGridHeader
+                  key={column.id}
+                  header={header}
+                  className="sticky left-0 z-20"
+                  style={{ left: column.getStart('left') }}
+                />
+              );
+            })}
+
+            {/* Virtualized Center Headers */}
+            <div className="relative flex-1 h-full">
+              {columnVirtualizer.getVirtualItems().map((virtualColumn) => {
+                const column = centerColumns[virtualColumn.index];
+                const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
+                if (!header) return null;
+                return (
+                  <DataGridHeader
+                    key={column.id}
+                    header={header}
+                    className="absolute top-0 h-full"
+                    style={{
+                      width: virtualColumn.size,
+                      left: virtualColumn.start,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Right Pinned Headers */}
+            {table.getRightLeafColumns().map((column) => {
+              const header = table.getHeaderGroups()[0].headers.find(h => h.column.id === column.id);
+              if (!header) return null;
+              return (
+                <DataGridHeader
+                  key={column.id}
+                  header={header}
+                  className="sticky right-0 z-20"
+                  style={{ right: column.getAfter('right') }}
+                />
+              );
+            })}
         </div>
 
         {/* Body */}
@@ -275,7 +345,12 @@ export function DataGrid<T extends Record<string, unknown>>({
           virtualCols={columnVirtualizer.getVirtualItems()}
           totalHeight={rowVirtualizer.getTotalSize()}
           totalWidth={columnVirtualizer.getTotalSize()}
-          rows={tableRows}
+          rows={centerRows}
+          topRows={topRows}
+          bottomRows={bottomRows}
+          leftColumns={leftColumns}
+          rightColumns={rightColumns}
+          centerColumns={centerColumns}
           editingCell={editingCell}
           onEditStart={useCallback(
             (rowIndex, colId) => setEditingCell({ rowIndex, colId }),

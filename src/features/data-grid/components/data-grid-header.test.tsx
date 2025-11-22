@@ -17,6 +17,7 @@ describe('DataGridHeader', () => {
       getIsSorted: () => false,
       getToggleSortingHandler: () => mockToggleSorting,
       getIsResizing: () => false,
+      getIsPinned: vi.fn(),
     },
     getSize: () => 100,
     getContext: () => ({}),
