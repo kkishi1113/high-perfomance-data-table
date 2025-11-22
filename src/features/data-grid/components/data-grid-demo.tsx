@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { DataGrid } from "./data-grid";
-import type { ColumnDefSimple } from "./types";
+import type { ColumnDefSimple } from "../types";
 import { faker } from "@faker-js/faker";
 
 type Person = {

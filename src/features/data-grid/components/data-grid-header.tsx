@@ -34,7 +34,7 @@ export function DataGridHeader<T>({
   return (
     <div
       className={cn(
-        "flex items-center px-2 py-1 border-r bg-gray-50 text-sm font-medium relative group select-none",
+        "flex h-full items-center px-2 py-1 border-r bg-gray-50 text-sm font-medium relative group select-none",
         className
       )}
       style={{
@@ -43,7 +43,7 @@ export function DataGridHeader<T>({
       }}
     >
       <div
-        className="flex-1 flex items-center gap-1 cursor-pointer overflow-hidden"
+        className="flex-1 flex h-full justify-center items-center gap-1 cursor-pointer overflow-hidden"
         onClick={column.getToggleSortingHandler()}
       >
         <span className="truncate">

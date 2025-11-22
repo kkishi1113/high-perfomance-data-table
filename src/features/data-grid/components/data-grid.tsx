@@ -8,11 +8,11 @@ import {
   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { createWorker } from "./worker-factory";
+import { createWorker } from "@/features/data-grid/utils/worker-factory";
 import { DataGridBody } from "./data-grid-body";
 import { DataGridHeader } from "./data-grid-header";
 import { cn } from "@/lib/utils";
-import type { DataGridProps, WorkerResponse } from "./types";
+import type { DataGridProps, WorkerResponse } from "../types";
 
 /**
  * 高性能データグリッドコンポーネント
